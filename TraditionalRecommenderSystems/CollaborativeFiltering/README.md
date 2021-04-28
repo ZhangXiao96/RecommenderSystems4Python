@@ -1,7 +1,6 @@
 # Collaborative Filtering (CF)
 
-We implement the basic ItemCF and UserCF. However, it should be noted that to better understand the basic idea of these two algorithms, all the calculation is based on the matrix instead of graphs, which requires large memory because of the sparsity of the co-occurrence matrix.
-
+We implement ItemCF and UserCF based on the co-occurrence matrix instead of graph, which is much faster but less memory-friendly.
 ## Tips
 1. In practice, the number of users is usually much larger than items, which means ItemCF is usually more friendly because the item similarity-matrix is much smaller than the user-similarity matrix.
 2. The behavior matrix of users is usually highly sparse, hence accurately searching the similar users can be hard.
