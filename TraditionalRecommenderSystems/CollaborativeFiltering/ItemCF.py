@@ -15,7 +15,7 @@ class ItemCF(object):
         :param value: only valid when "fillna" equals 'constant'.
         :param similarity: similarity metric.
         """
-        self.user_item_pairs = user_item_pairs
+        self.user_item_pairs = pd.DataFrame(user_item_pairs)
 
         # build user-index and item-index dict.
         self.index_2_user = None
@@ -43,8 +43,7 @@ class ItemCF(object):
         :param value: only valid when "fillna" equals 'constant'.
         :return: self.
         """
-        self.history_rating_matrix = pd.DataFrame(self.user_item_pairs).\
-            pivot_table(values=2, index=0, columns=1, dropna=dropna)
+        self.history_rating_matrix = self.user_item_pairs.pivot_table(values=2, index=0, columns=1, dropna=dropna)
         self.item_mean = self.history_rating_matrix.mean(axis=0)
         self.user_mean = self.history_rating_matrix.mean(axis=1)
         self.index_2_user = self.history_rating_matrix.index.values
