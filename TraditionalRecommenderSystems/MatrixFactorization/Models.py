@@ -3,16 +3,17 @@ This implementation references to https://github.com/EthanRosenthal/torchmf/blob
 """
 import torch
 from torch import nn
+import numpy as np
 
 
 class BaseMF(nn.Module):
-    def __init__(self, nb_user, nb_item, nb_factor, drop_rate=0.5):
+    def __init__(self, nb_user, nb_item, nb_factor, drop_rate=0.5, sparse=False):
         super(BaseMF, self).__init__()
         self.nb_user, self.nb_item, self.nb_factor = nb_user, nb_item, nb_factor
         self.user_biases, self.item_biases = nn.Embedding(nb_user, 1), nn.Embedding(nb_item, 1)
-        self.global_bias = torch.Tensor(1)
-        self.user_embeddings = nn.Embedding(nb_user, nb_factor)
-        self.item_embeddings = nn.Embedding(nb_item, nb_factor)
+        self.global_bias = torch.nn.Parameter(torch.Tensor([[0.]]), requires_grad=True)
+        self.user_embeddings = nn.Embedding(nb_user, nb_factor, sparse=sparse)
+        self.item_embeddings = nn.Embedding(nb_item, nb_factor, sparse=sparse)
         self.dropout = nn.Dropout(p=drop_rate)
 
     def forward(self, users, items):
@@ -26,4 +27,5 @@ class BaseMF(nn.Module):
         return self.forward(users, items)
 
     def get_rating_matrix(self):
-        return self.user_embeddings.weight @ self.item_embeddings.weight.t()
+        return self.user_embeddings.weight @ self.item_embeddings.weight.t()\
+                      + self.user_biases.weight + self.item_biases.weight.t() + self.global_bias

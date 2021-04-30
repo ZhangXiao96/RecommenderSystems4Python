@@ -6,10 +6,12 @@ import warnings
 
 
 class UserCF(object):
-    def __init__(self, user_item_pairs, nb_similar_user, fillna='constant', value=0, similarity=cosine):
+    def __init__(self, user_item_pairs, user_list, item_list, nb_similar_user, fillna='constant', value=0, similarity=cosine):
         """
         User Collaborative Filtering.
         :param user_item_pairs: [(user, item, rating)].
+        :param user_list: list. The list of existing users.
+        :param user_list: list. The list of existing items.
         :param nb_similar_user: The number of similar users to be utilized.
         :param fillna: mode to fill NaN in user_item_matrix. Chosen from {"item_mean", "user_mean", "constant"}.
         :param value: only valid when "fillna" equals 'constant'.
@@ -17,11 +19,14 @@ class UserCF(object):
         """
         self.user_item_pairs = pd.DataFrame(user_item_pairs)
 
-        # build user-index and item-index dict.
-        self.index_2_user = None
-        self.index_2_item = None
-        self.user_2_index = None
-        self.item_2_index = None
+        # build index-user, index-item
+        self.index_2_user = np.array(user_list)
+        self.index_2_item = np.array(item_list)
+        assert len(self.index_2_user) == len(set(self.index_2_user))
+        assert len(self.index_2_item) == len(set(self.index_2_item))
+        self.user_2_index = {self.index_2_user[i]: i for i in range(len(self.index_2_user))}
+        self.item_2_index = {self.index_2_item[i]: i for i in range(len(self.index_2_item))}
+        self.nb_user, self.nb_item = len(user_list), len(item_list)
 
         self.history_rating_matrix = None
         self.filled_history_rating_matrix = None
@@ -30,25 +35,21 @@ class UserCF(object):
         self.user_sim_matrix = None
         self.pred_rating_matrix = None
 
-        self.update_history_rating_matrix(dropna=False, fillna=fillna, value=value)
+        self.update_history_rating_matrix(fillna=fillna, value=value)
         self.update_user_sim_matrix(similarity=similarity)
         self.update_pred_rating_matrix(nb_similar_user=nb_similar_user)
 
-    def update_history_rating_matrix(self, dropna=False, fillna='constant', value=0):
+    def update_history_rating_matrix(self, fillna='constant', value=0):
         """
         Update history rating matrix.
-        :param dropna: boolean.
         :param fillna: mode to fill NaN in user_item_matrix. Chosen from {"item_mean", "user_mean", "constant"}.
         :param value: only valid when "fillna" equals 'constant'.
         :return: self.
         """
-        self.history_rating_matrix = self.user_item_pairs.pivot_table(values=2, index=0, columns=1, dropna=dropna)
-        self.item_mean = self.history_rating_matrix.mean(axis=0)
-        self.user_mean = self.history_rating_matrix.mean(axis=1)
-        self.index_2_user = self.history_rating_matrix.index.values
-        self.index_2_item = self.history_rating_matrix.columns.values
-        self.user_2_index = {self.index_2_user[i]: i for i in range(len(self.index_2_user))}
-        self.item_2_index = {self.index_2_item[i]: i for i in range(len(self.index_2_item))}
+        self.history_rating_matrix = pd.DataFrame(index=self.index_2_user, columns=self.index_2_item)
+        for i, j, k in self.user_item_pairs.values:
+            if i and j and k:
+                self.history_rating_matrix[j][i] = k
 
         if fillna == 'item_mean':
             self.filled_history_rating_matrix = self.history_rating_matrix.fillna(self.item_mean)
@@ -74,22 +75,6 @@ class UserCF(object):
         self.user_sim_matrix = similarity(self.filled_history_rating_matrix.values,
                                           self.filled_history_rating_matrix.values)
         return self
-
-    # def update_pred_rating_matrix(self, nb_similar_user, rated_field='origin', value=np.nan):
-    #     index_top_k, sim_top_k = self.top_k_sim_users(self.index_2_user, nb_similar_user)
-    #     average_scores = np.array([np.sum(sim_top_k[i, :, np.newaxis] *
-    #                                       self.filled_history_rating_matrix.values[index_top_k[i], :], axis=0)
-    #                                / np.sum(sim_top_k[i]) for i in range(len(self.index_2_user))])
-    #     if rated_field == 'origin':
-    #         self.pred_rating_matrix = np.where(self.history_rating_matrix.isna(), average_scores,
-    #                                            self.history_rating_matrix)
-    #     elif rated_field == 'constant':
-    #         self.pred_rating_matrix = np.where(self.history_rating_matrix.isna(), average_scores, value)
-    #     elif rated_field == 'prediction':
-    #         self.pred_rating_matrix = average_scores
-    #     else:
-    #         raise Exception('rate_field should be chosen from {origin, constant, prediction}!')
-    #     return self
 
     def update_pred_rating_matrix(self, nb_similar_user):
         """

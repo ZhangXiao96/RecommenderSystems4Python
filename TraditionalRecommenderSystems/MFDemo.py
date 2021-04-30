@@ -1,16 +1,14 @@
 import numpy as np
 import pandas as pd
-from TraditionalRecommenderSystems.CollaborativeFiltering.UserCF import UserCF
-from TraditionalRecommenderSystems.CollaborativeFiltering.ItemCF import ItemCF
-from lib.metric import cosine
+from TraditionalRecommenderSystems.MatrixFactorization.MatrixFactorization import MatrixFactorization
 from sklearn.model_selection import train_test_split
+from torch.optim import SGD
 import os
 
 # load dataset
 data_root = os.path.join('..', 'Dataset', 'MovieLens', 'ml-latest-small')
 rating_data_path = os.path.join(data_root, 'ratings.csv')
 movie_data_path = os.path.join(data_root, 'movies.csv')
-model = 'ItemCF'
 
 rating_data = pd.read_csv(rating_data_path)
 movie_data = pd.read_csv(movie_data_path)
@@ -28,22 +26,20 @@ paired_train_data = list(zip(train_data['userId'].values, train_data['movieId'].
 paired_test_data = list(zip(test_data['userId'].values, test_data['movieId'].values))
 test_ground_truth = test_data['rating'].values
 
-if model == 'UserCF':
-    # using UserCF to see the predicted ratings of the movie
-    CF = UserCF(paired_train_data, unique_users, unique_items, nb_similar_user=20,
-                fillna="constant", value=0, similarity=cosine)
-elif model == 'ItemCF':
-    # using ItemCF to see the predicted ratings of the movie
-    CF = ItemCF(paired_train_data, unique_users, unique_items, nb_similar_item=20,
-                fillna="constant", value=0, similarity=cosine)
-else:
-    raise Exception('No model named {}!'.format(model))
+# using UserCF to see the predicted ratings of the movie
+MF = MatrixFactorization(paired_train_data, user_list=unique_users, item_list=unique_items, nb_factor=50, lr=1e-2,
+                         weight_decay=0., batch_size=64, drop_rate=0.0, optimizer=SGD)
+train_loss, test_loss = MF.train(epochs=50, test_data=list(zip(test_data['userId'].values, test_data['movieId'].values,
+                                                               test_data['rating'].values)), test_epoch_step=1)
 
 # top 10 recommendation (id and score).
 test_users, test_items = test_data['userId'].values, test_data['movieId'].values
 test_unique_users = list(set(test_users))
-id_recommendation, rating_recommendation = CF.recommend(test_unique_users, 10)
-prediction = CF.predict_ratings(paired_test_data)
+id_recommendation, rating_recommendation = MF.recommend(test_unique_users, 10)
+prediction = MF.predict_ratings(paired_test_data)
+
+a = MF.model.get_rating_matrix().data.cpu().numpy()
+b = MF.history_rating_matrix.values
 
 # calculate precision and recall
 test_dict = {}
@@ -56,7 +52,7 @@ for i in range(len(test_data)):
 
 precision, recall = 0, 0
 for i, user in enumerate(test_unique_users):
-    pred_items = set(CF.indices_to_items(id_recommendation[i].ravel()))
+    pred_items = set(MF.indices_to_items(id_recommendation[i].ravel()))
     hit = pred_items & test_dict[user]
     precision += len(hit) / len(pred_items)
     recall += len(hit) / len(test_dict[user])
