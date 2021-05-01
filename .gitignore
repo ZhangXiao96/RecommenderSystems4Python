@@ -1,4 +1,5 @@
 *.csv
 *.npz
 *.pyc
-.idea
+.idea/
+.git/
