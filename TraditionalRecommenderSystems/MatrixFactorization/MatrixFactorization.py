@@ -11,7 +11,7 @@ from tqdm import tqdm
 class MatrixFactorization(object):
     def __init__(self, user_item_pairs, user_list, item_list, nb_factor=40, drop_rate=0.5, batch_size=32, lr=1e-1,
                  optimizer=torch.optim.Adam, loss_func=nn.MSELoss(reduction='mean'), sparse=False,
-                 weight_decay=0., device='cuda'):
+                 weight_decay=0., device='cuda', pro_process=None):
         """
         Matrix Factorization.
         :param user_item_pairs: [(user, item, rating)].
@@ -30,7 +30,7 @@ class MatrixFactorization(object):
         # prepare training loader
         train_user_indices = torch.from_numpy(self.users_to_indices(self.user_item_pairs[0].values)).long()
         train_item_indices = torch.from_numpy(self.items_to_indices(self.user_item_pairs[1].values)).long()
-        train_ratings = torch.from_numpy(self.user_item_pairs[2].values).float()
+        train_ratings = torch.from_numpy(self.user_item_pairs[2].values.reshape(-1, 1)).float()
         self.train_data_loader = data.DataLoader(data.TensorDataset(train_user_indices, train_item_indices,
                                                                     train_ratings), batch_size=batch_size, shuffle=True)
 
@@ -42,7 +42,8 @@ class MatrixFactorization(object):
         self.weight_decay = weight_decay
         self.device = device
         self.sparse = sparse
-        self.model = BaseMF(self.nb_user, self.nb_item, nb_factor, drop_rate, sparse).to(device)
+        self.process = pro_process
+        self.model = BaseMF(self.nb_user, self.nb_item, nb_factor, drop_rate, sparse, pro_process=self.process).to(device)
         self.optimizer = optimizer(self.model.parameters(), lr=lr, weight_decay=weight_decay)
 
         # build history rating matrix

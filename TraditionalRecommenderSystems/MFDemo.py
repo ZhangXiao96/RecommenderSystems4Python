@@ -2,7 +2,8 @@ import numpy as np
 import pandas as pd
 from TraditionalRecommenderSystems.MatrixFactorization.MatrixFactorization import MatrixFactorization
 from sklearn.model_selection import train_test_split
-from torch.optim import SGD
+import torch.nn as nn
+import torch
 import os
 
 # load dataset
@@ -26,10 +27,20 @@ paired_train_data = list(zip(train_data['userId'].values, train_data['movieId'].
 paired_test_data = list(zip(test_data['userId'].values, test_data['movieId'].values))
 test_ground_truth = test_data['rating'].values
 
-# using UserCF to see the predicted ratings of the movie
-MF = MatrixFactorization(paired_train_data, user_list=unique_users, item_list=unique_items, nb_factor=50, lr=1e-2,
-                         weight_decay=0., batch_size=64, drop_rate=0.0, optimizer=SGD)
-train_loss, test_loss = MF.train(epochs=50, test_data=list(zip(test_data['userId'].values, test_data['movieId'].values,
+# using MF to see the predicted ratings of the movie
+
+#
+# class Sigmoid5(nn.Module):
+#     def forward(self, input):
+#         return 5*torch.sigmoid(input)
+
+# MF = MatrixFactorization(paired_train_data, user_list=unique_users, item_list=unique_items, nb_factor=50, lr=1e-2,
+#                          weight_decay=0., batch_size=64, drop_rate=0.2, pro_process=Sigmoid5())
+
+MF = MatrixFactorization(paired_train_data, user_list=unique_users, item_list=unique_items, nb_factor=80, lr=1e-3,
+                         weight_decay=1e-6, batch_size=64, drop_rate=0.2, pro_process=None)
+
+train_loss, test_loss = MF.train(epochs=80, test_data=list(zip(test_data['userId'].values, test_data['movieId'].values,
                                                                test_data['rating'].values)), test_epoch_step=1)
 
 # top 10 recommendation (id and score).

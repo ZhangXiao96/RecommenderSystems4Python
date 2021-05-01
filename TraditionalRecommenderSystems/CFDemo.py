@@ -10,7 +10,7 @@ import os
 data_root = os.path.join('..', 'Dataset', 'MovieLens', 'ml-latest-small')
 rating_data_path = os.path.join(data_root, 'ratings.csv')
 movie_data_path = os.path.join(data_root, 'movies.csv')
-model = 'ItemCF'
+model = 'UserCF'
 
 rating_data = pd.read_csv(rating_data_path)
 movie_data = pd.read_csv(movie_data_path)

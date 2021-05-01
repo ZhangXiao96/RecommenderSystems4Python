@@ -12,19 +12,48 @@ If you have any question, please send email to *xiao_zhang@hust.edu.cn*.
 ### [Collaborative Filtering](./TraditionalRecommenderSystems/CFDemo.py)
 
 We implement **ItemCF** and **UserCF** based on the co-occurrence matrix instead of graph, which is much faster but less memory-friendly.
+
+### Parameters
+|Model|nb_similar_user|nb_similar_item|Fill NA|Similarity|Top K|
+|----|----|----|----|----|----|
+|UserCF|20|None|0|cos|10|
+|ItemCF|20|None|0|cos|10|
+
+### Results
+
+|Model|Test MSE|Precision(%)|Recall(%)|
+|----|----|----|----|
+|UserCF|7.11|17.7|18.6|
+|ItemCF|4.00|16.0|16.9|
+
 ### Tips
 1. In practice, the number of users is usually much larger than items, which means ItemCF is usually more friendly because the item similarity-matrix is much smaller than the user-similarity matrix.
 2. The behavior matrix of users is usually highly sparse, hence accurately searching the similar users can be hard.
 3. The basic idea of UserCF is that similar people share similar interests, so it is usually utilized in some situations with social properties, such as news recommendation systems. UserCF is good at tracking hot spots.
 4. ItemCF is usually applied in the situation when the interests of users are stable in a while, such as e-commerce and video recommendation.
 5. The basic ItemCF and UserCF do not efficiently utilize some other information, such as the information of users or the descriptions of items.
+6. The topK of ItemCF is based on Scores calculated instead of the predict rating.
 
 ### [Matrix Factorization](./TraditionalRecommenderSystems/MFDemo.py)
 
 We implement Matrix Factorization based on PyTorch.
 
+### Parameters
+
+|nb_factor|Optimizer|lr|Weight Decay|Epochs|Batch Size|Drop Rate|Top K|
+|----|----|----|----|----|----|----|----|
+|80|Adam|1e-3|1e-6|80|64|0.2|10|
+
+### Results
+|Model|Train MSE|Test MSE|Precision(%)|Recall(%)|
+|----|----|----|----|----|
+|Base MF| 0.20| 0.87|0.23|0.07|
+
 ### Tips
-**Our implemented version doesn't perform well on MovieLens. We will check it in the future.**
+1. Using Matrix Factorization can be more memory-friendly because the features of every user and item can be represented as a latent vector, which is usually much smaller than the rating matrix.
+2. The test MSE loss of Matrix Factorization is much less than CF.
+3. Note: here the recall and precision of the recommended movies is not based on the rating but whether the user rates them.
+
 
 ### Factorization Machine (TODO)
 

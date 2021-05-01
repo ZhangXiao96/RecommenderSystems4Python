@@ -7,7 +7,7 @@ import numpy as np
 
 
 class BaseMF(nn.Module):
-    def __init__(self, nb_user, nb_item, nb_factor, drop_rate=0.5, sparse=False):
+    def __init__(self, nb_user, nb_item, nb_factor, drop_rate=0.5, sparse=False, pro_process=None):
         super(BaseMF, self).__init__()
         self.nb_user, self.nb_item, self.nb_factor = nb_user, nb_item, nb_factor
         self.user_biases, self.item_biases = nn.Embedding(nb_user, 1), nn.Embedding(nb_item, 1)
@@ -15,17 +15,21 @@ class BaseMF(nn.Module):
         self.user_embeddings = nn.Embedding(nb_user, nb_factor, sparse=sparse)
         self.item_embeddings = nn.Embedding(nb_item, nb_factor, sparse=sparse)
         self.dropout = nn.Dropout(p=drop_rate)
+        self.process = pro_process
 
     def forward(self, users, items):
         user_matrix = self.user_embeddings(users)
         item_matrix = self.item_embeddings(items)
         preds = (self.dropout(user_matrix) * self.dropout(item_matrix)).sum(axis=-1, keepdim=True)
         preds += self.user_biases(users) + self.item_biases(items) + self.global_bias
+        if self.process:
+            preds = self.process(preds)
         return preds
 
     def predict(self, users, items):
         return self.forward(users, items)
 
     def get_rating_matrix(self):
-        return self.user_embeddings.weight @ self.item_embeddings.weight.t()\
+        res = self.user_embeddings.weight @ self.item_embeddings.weight.t()\
                       + self.user_biases.weight + self.item_biases.weight.t() + self.global_bias
+        return self.process(res) if self.process else res
