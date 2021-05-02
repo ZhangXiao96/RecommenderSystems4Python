@@ -13,8 +13,20 @@ class MatrixFactorization(object):
                  optimizer=torch.optim.Adam, loss_func=nn.MSELoss(reduction='mean'), sparse=False,
                  weight_decay=0., device='cuda', pro_process=None):
         """
-        Matrix Factorization.
-        :param user_item_pairs: [(user, item, rating)].
+        Matrix Factorization based on Pytorch.
+        :param user_item_pairs: list. [(user, item, rating)].
+        :param user_list: list. The list of all the users (with no repeat).
+        :param item_list: list. The list of all the items (with no repeat).
+        :param nb_factor: int. The number of factors.
+        :param drop_rate: float 0~1. Drop rate of the dropout layer.
+        :param batch_size: int. Batch size of training
+        :param lr: float. Learning rate.
+        :param optimizer: torch.optim. Optimizer utilized to train the model.
+        :param loss_func: torch.nn.*Loss. Loss function of training.
+        :param sparse: boolean. The gradient requires to be sparse or not.
+        :param weight_decay: float. L2 regularization.
+        :param device: 'cpu' or 'cuda'.
+        :param pro_process: nn.Module.
         """
         self.user_item_pairs = pd.DataFrame(user_item_pairs)
 
@@ -52,6 +64,13 @@ class MatrixFactorization(object):
         self.update_history_rating_matrix()
 
     def train(self, epochs, test_data=None, test_epoch_step=1):
+        """
+        Train the model.
+        :param epochs: int. The epochs of training.
+        :param test_data: [(user, item, rating)]. None if no validation is applied.
+        :param test_epoch_step: int. The step of validation.
+        :return: (list of training loss, list of test loss) if validation is applied, else only the list of training loss.
+        """
         hist_train_loss, hist_test_loss = [], []
         if test_data is not None:
             test_data = pd.DataFrame(test_data)
@@ -71,6 +90,9 @@ class MatrixFactorization(object):
         return hist_train_loss, hist_test_loss
 
     def train_epoch(self):
+        """
+        :return: training loss.
+        """
         self.model.train()
         epoch_loss = 0.
         for id_user, id_item, id_rating in tqdm(self.train_data_loader):

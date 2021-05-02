@@ -9,9 +9,9 @@ class ItemCF(object):
     def __init__(self, user_item_pairs, user_list, item_list, nb_similar_item, fillna='constant', value=0, similarity=cosine):
         """
         Item Collaborative Filtering.
-        :param user_item_pairs: [(user, item, rating)].
-        :param user_list: list. The list of existing users.
-        :param user_list: list. The list of existing items.
+        :param user_item_pairs: list. [(user, item, rating)].
+        :param user_list: list. The list of all the users (with no repeat).
+        :param item_list: list. The list of all the items (with no repeat).
         :param nb_similar_item: The number of similar items to be utilized.
         :param fillna: mode to fill NaN in user_item_matrix. Chosen from {"item_mean", "user_mean", "constant"}.
         :param value: only valid when "fillna" equals 'constant'.
